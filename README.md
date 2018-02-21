@@ -1,5 +1,5 @@
 # Azure-Gateway-Point-To-Site
-Deploy an Azure Vnet, two Subnets and a Gateway P2S. 
+Deploy an Azure Vnet, two Subnets and a VPN Gateway P2S. 
 
 Deployment steps:
 1. Check the resource group or create it.
