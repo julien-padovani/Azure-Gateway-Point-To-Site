@@ -68,17 +68,6 @@ $mypwd = ConvertTo-SecureString -String "mypassword" -Force -AsPlainText
 $ErrorActionPreference = "Stop"
 import-module AzureRM
 
-#Check admin right, required to update network module
-if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(`
-
-    [Security.Principal.WindowsBuiltInRole] "Administrator"))
-
-{
-    Write-Warning "You do not have Administrator rights to run this script!`nPlease re-run this script as an Administrator!"
-    Break
-}
-
-
 # sign in
 Write-Host "Logging in...";
 if (!(Test-Path $credentialsPath)){
@@ -93,6 +82,29 @@ else{
     Select-AzureRmProfile -Path $credentialsPath
 }
 
+#Check if Azurerm VPNClient cmdlets are present
+try
+{
+    $test = Get-Command 'Get-AzureRmVpnClientConfiguration' -ErrorAction Stop
+}
+catch
+{
+    $ErrorMessage = $_.Exception.Message
+    if($ErrorMessage -match "The term 'Get-AzureRmVpnClientConfiguration' is not recognized as the name of a cmdlet")
+    {
+        Write-Warning "Powershell network module update is required"
+        #Admin rights required
+        #Check admin right, required to update network module to download VPN client (end of the script)
+        if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
+        {
+            Write-Warning "You do not have Administrator rights to run this script!`nPlease re-run this script as an Administrator!"
+            Break
+        }
+        #Update AzureRM Network for Powershell to have cmdlet : Get-AzureRmVpnClientConfiguration
+        update-Module -Name AzureRM.Network -force
+        Import-Module AzureRM
+    }
+}
 
 #Create or check for existing resource group
 $resourceGroup = Get-AzureRmResourceGroup -Name $resourceGroupName -ErrorAction SilentlyContinue
@@ -164,22 +176,12 @@ $cert = New-SelfSignedCertificate -Type Custom -KeySpec Signature `
 
 Export-PfxCertificate -Cert $Cert –FilePath $CertClientPfx -Password $mypwd #Create a backup of client certificate with private key
 
-
 #Download VPN client
-try{
-    $profile = New-AzureRmVpnClientConfiguration -ResourceGroupName $resourceGroupName -Name $GWName -AuthenticationMethod "EapTls"
-    $profile.VPNProfileSASUrl
-
-    $url = $profile.VPNProfileSASUrl
-    $output = "$ScriptPath\VPN-$VNETName.zip"
-    (New-Object System.Net.WebClient).DownloadFile($url, $output)
-}
-catch{
-    #Admin rights required
-    #Update AzureRM Network for Powershell to have cmdlet : Get-AzureRmVpnClientConfiguration
-    update-Module -Name AzureRM.Network -force
-    Import-Module AzureRM
-}
+$profile = New-AzureRmVpnClientConfiguration -ResourceGroupName $resourceGroupName -Name $GWName -AuthenticationMethod "EapTls"
+$profile.VPNProfileSASUrl
+$url = $profile.VPNProfileSASUrl
+$output = "$ScriptPath\VPN-$VNETName.zip"
+(New-Object System.Net.WebClient).DownloadFile($url, $output)
 
 #Remove the AzureRM Profile file
 if(!$KeepAzureRMProfile){
