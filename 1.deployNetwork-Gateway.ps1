@@ -141,7 +141,7 @@ Set-AzureRmVirtualNetwork -VirtualNetwork $vnet
 $VNET = Get-AzureRmVirtualNetwork -Name $VNETName -ResourceGroupName $resourceGroupName
 $subnet = Get-AzureRmVirtualNetworkSubnetConfig -Name "GatewaySubnet" -VirtualNetwork $VNET
 
-$pip = New-AzureRmPublicIpAddress -Name $GWIPName -ResourceGroupName $resourceGroupName -Location $resourceGroupLocation -AllocationMethod Dynamic
+$pip = New-AzureRmPublicIpAddress -Name $GWIPName -ResourceGroupName $resourceGroupName -Location $resourceGroupLocation -AllocationMethod Static
 $ipconf = New-AzureRmVirtualNetworkGatewayIpConfig -Name $GWIPconfName -Subnet $subnet -PublicIpAddress $pip
 
 write-host "Gateway creation could take 45minutes"
@@ -157,8 +157,8 @@ $cert = New-SelfSignedCertificate -Type Custom -KeySpec Signature `
 -HashAlgorithm sha256 -KeyLength 2048 `
 -CertStoreLocation "Cert:\CurrentUser\My" -KeyUsageProperty Sign -KeyUsage CertSign -NotAfter (Get-Date).AddYears(10)
 
-Export-Certificate –Cert $Cert –FilePath $CertDER -Type CERT -NoClobber #Create a tempory file, public key of root certificate
-Export-PfxCertificate -Cert $Cert –FilePath $CertPfx -Password $mypwd #Create a backup of root certificate with private key
+Export-Certificate â€“Cert $Cert â€“FilePath $CertDER -Type CERT -NoClobber #Create a tempory file, public key of root certificate
+Export-PfxCertificate -Cert $Cert â€“FilePath $CertPfx -Password $mypwd #Create a backup of root certificate with private key
 $CertContent = new-object System.Security.Cryptography.X509Certificates.X509Certificate2($CertDER)
 Remove-Item $CertDER 
 $CertBase64 = [system.convert]::ToBase64String($CertContent.RawData)
@@ -174,7 +174,7 @@ $cert = New-SelfSignedCertificate -Type Custom -KeySpec Signature `
 -CertStoreLocation "Cert:\CurrentUser\My" `
 -Signer $cert -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.2")
 
-Export-PfxCertificate -Cert $Cert –FilePath $CertClientPfx -Password $mypwd #Create a backup of client certificate with private key
+Export-PfxCertificate -Cert $Cert â€“FilePath $CertClientPfx -Password $mypwd #Create a backup of client certificate with private key
 
 #Download VPN client
 $profile = New-AzureRmVpnClientConfiguration -ResourceGroupName $resourceGroupName -Name $GWName -AuthenticationMethod "EapTls"
